@@ -5,13 +5,32 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+type Config struct {
+	DatabaseFilepath string `json:"database_filepath"`
+	LogFilepath      string `json:"log_filepath"`
+}
+
+func loadConfig(path string) (*Config, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var cfg Config
+	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
 
 type CheckPasswordRequest struct {
 	Password string `json:"password"`
@@ -55,7 +74,6 @@ func (a *App) Close() {
 	a.DB.Close()
 }
 
-// A method on App
 func (a *App) checkPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -67,7 +85,7 @@ func (a *App) checkPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	var req CheckPasswordRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil || req.Password == "" {
-		fmt.Printf("%+v\n", err)
+		log.Printf("Error decoding request: %+v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -76,7 +94,7 @@ func (a *App) checkPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	hasBeenLeaked, err := a.isPasswordLeaked(sha1Hash)
 	if err != nil {
-		fmt.Printf("%+v\n", err)
+		log.Printf("Error checking password: %+v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -87,7 +105,10 @@ func (a *App) checkPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Printf("Error encoding response: %+v", err)
+	}
 }
 
 func (a *App) isPasswordLeaked(sha1 string) (bool, error) {
@@ -102,6 +123,7 @@ func calculateSHA1(password string) string {
 	return strings.ToUpper(hex.EncodeToString(hash.Sum(nil)))
 }
 
+// API key check
 func (a *App) apiKeyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := r.Header.Get("X-API-Key")
@@ -122,19 +144,35 @@ func (a *App) apiKeyMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	var err error
-	db, err := sql.Open("sqlite3", "./database/leaked-passwords-checker.db")
+	// Load configuration
+	config, err := loadConfig("configs/leaked-passwords-checker.json")
+	if err != nil {
+		log.Fatalf("Error loading config: %v", err)
+	}
+
+	// Open log file and redirect default logger to it
+	logFile, err := os.OpenFile(config.LogFilepath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("Failed to open log file: %v", err)
+	}
+	defer logFile.Close()
+	log.SetOutput(logFile)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// Use the database filepath from the config
+	db, err := sql.Open("sqlite3", config.DatabaseFilepath)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	// Use App's constructor
+	// Initialise the application
 	app, err := NewApp(db)
 	if err != nil {
 		log.Fatalf("Failed to initialize app: %v", err)
 	}
 	defer app.Close()
 
+	// Setup HTTP handler with API key middleware
 	http.Handle("/v1/password/check", app.apiKeyMiddleware(http.HandlerFunc(app.checkPasswordHandler)))
 
 	log.Println("Starting server on :8080")
