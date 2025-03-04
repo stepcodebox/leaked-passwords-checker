@@ -10,31 +10,23 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR/.."
 cd "$PROJECT_ROOT" || exit 1
 
-# Define variables
-PROJECT_NAME="leaked-passwords-checker"
-DOWNLOADER_NAME="downloader"
-OUTPUT_DIR="./bin"
-OUTPUT_MAIN_FILE="$OUTPUT_DIR/$PROJECT_NAME"
-OUTPUT_DOWNLOADER_FILE="$OUTPUT_DIR/$DOWNLOADER_NAME"
-
 # Create the output directory if it doesn't exist
-mkdir -p "$OUTPUT_DIR"
+mkdir -p "./bin"
 
-echo "Building $PROJECT_NAME..."
+echo "Building leaked-passwords-checker..."
 
 # Build the project
-go build -o "$OUTPUT_MAIN_FILE" .
+CGO_ENABLED=1 go build -o ./bin/leaked-passwords-checker .
 
 # Check if the build was successful
 if [ $? -ne 0 ]; then
-  echo "Build failed (main). Exiting."
+  echo "Build failed (leaked-passwords-checker). Exiting."
   exit 1
 fi
 
-echo "Building $DOWNLOADER_NAME..."
+echo "Building downloader..."
 
-# Build the downloader
-go build -o "$OUTPUT_DOWNLOADER_FILE" .
+CGO_ENABLED=1 go build -o ./bin/downloader ./tools/downloader.go
 
 # Check if the build was successful
 if [ $? -ne 0 ]; then
