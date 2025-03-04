@@ -2,3 +2,4 @@
 /bin/
 /configs/leaked-passwords-checker.json
 /database/leaked-passwords-checker.db
+/logs/leaked-passwords-checker.log
