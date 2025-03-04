@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -144,8 +145,12 @@ func (a *App) apiKeyMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	// Load configuration
-	config, err := loadConfig("configs/leaked-passwords-checker.json")
+	// Parse command-line flags
+	configPath := flag.String("config", "./configs/leaked-passwords-checker.json", "Path to configuration file")
+	flag.Parse()
+
+	// Load configuration using the provided path
+	config, err := loadConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
