@@ -4,7 +4,7 @@
 
 This tool helps you enhance security by preventing users from using compromised passwords. It’s specifically useful for **preventing the re-usage of leaked passwords during account creation, update or password reset** which improves IT security across your apps, websites and web services.
 
-The data is provided by the haveibeenpwned service as a one-time download using their public API.
+The data is provided by the HaveIBeenPwned service as a one-time download using their public API.
 
 ## Features
 
@@ -37,7 +37,18 @@ The service is supposed to be running behind nginx Nginx or similar proxies for 
    ./scripts/setup.sh
    ```
 
-3. **Run the Service**:
+3. **Build the Service**:
+   The following script builds both the service and the downloader of the HaveIBeenPwned database:
+   ```bash
+   ./scripts/build.sh
+   ```
+
+4. **Download the HaveIBeenPwned Database**:
+   ```bash
+   ./scripts/download.sh
+   ```
+
+4. **Run the Service**:
    ```bash
    ./scripts/run.sh
    ```
