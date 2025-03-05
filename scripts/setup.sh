@@ -29,8 +29,6 @@ else
     echo "Config file already exists. Skipping config file creation."
 fi
 
-cp "/home/stephen/Projects/Leaked Passwords Checker/Git Repositories/leaked-passwords-checker/configs/leaked-passwords-checker.example.json"
-
 if [ ! -f "database/leaked-passwords-checker.db" ]; then
     sqlite3 "database/leaked-passwords-checker.db" < "setup/database.sql"
 else
