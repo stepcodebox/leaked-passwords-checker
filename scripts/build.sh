@@ -13,6 +13,8 @@ cd "$PROJECT_ROOT" || exit 1
 # Create the output directory if it doesn't exist
 mkdir -p "./bin"
 
+rm "./bin/leaked-passwords-checker" "./bin/downloader"
+
 echo "Building leaked-passwords-checker..."
 
 # Build the project
