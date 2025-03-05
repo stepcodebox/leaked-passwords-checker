@@ -170,6 +170,16 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	_, err = db.Exec("PRAGMA journal_mode=WAL;")
+	if err != nil {
+		log.Fatalf("Failed to set WAL mode: %v", err)
+	}
+
+	_, err = db.Exec("PRAGMA busy_timeout=5000;")
+	if err != nil {
+		log.Fatalf("Failed to set busy_timeout: %v", err)
+	}
+
 	// Initialise the application
 	app, err := NewApp(db)
 	if err != nil {

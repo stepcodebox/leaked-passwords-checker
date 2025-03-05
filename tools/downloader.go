@@ -79,6 +79,16 @@ func main() {
 	}
 	defer db.Close()
 
+	_, err = db.Exec("PRAGMA journal_mode=WAL;")
+	if err != nil {
+		log.Fatalf("Failed to set WAL mode: %v", err)
+	}
+
+	_, err = db.Exec("PRAGMA busy_timeout=5000;")
+	if err != nil {
+		log.Fatalf("Failed to set busy_timeout: %v", err)
+	}
+
 	// Ensure the table exists
 	if _, err := db.Exec(createTableQuery); err != nil {
 		log.Fatalf("Failed to set up database schema: %v", err)
