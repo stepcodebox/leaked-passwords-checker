@@ -34,8 +34,8 @@ fi
 DB_FILE="database/leaked-passwords-checker.db"
 
 if [ ! -f "$DB_FILE" ]; then
-    echo "Database file not found. Creating database using setup/database.sql..."
-    sqlite3 "$DB_FILE" < "setup/database.sql"
+    echo "Database file not found. Creating database..."
+    sqlite3 "$DB_FILE" < "scripts/setup/database.sql"
 
     # Generate a random 20-character alphanumeric API key.
     API_KEY=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 20)
