@@ -38,10 +38,13 @@ func loadConfig(path string) (*Config, error) {
 }
 
 const (
-	apiBaseURL       = "https://api.pwnedpasswords.com/range/"
-	parallelism      = 3           // Number of parallel API requests
-	totalRanges      = 1024 * 1024 // 1,048,576 possible 5-character prefixes
-	retryLimit       = 3
+	apiBaseURL  = "https://api.pwnedpasswords.com/range/"
+	parallelism = 3           // Number of parallel API requests
+	totalRanges = 1024 * 1024 // 1,048,576 possible 5-character prefixes
+	retryLimit  = 10
+	// Constants for insertion retry logic:
+	insertRetryLimit = 100
+	insertRetryDelay = 100 * time.Millisecond
 	createTableQuery = `
 		CREATE TABLE IF NOT EXISTS passwords (
 			sha1 TEXT PRIMARY KEY
@@ -176,9 +179,23 @@ func processResponse(hashPrefix string, body io.Reader, db *sql.DB) error {
 			continue
 		}
 		fullHash := hashPrefix + parts[0]
-		if _, err := stmt.Exec(fullHash); err != nil {
+		var execErr error
+		// Retry insertion if the error indicates the database is locked.
+		for i := 0; i < insertRetryLimit; i++ {
+			_, execErr = stmt.Exec(fullHash)
+			if execErr == nil {
+				break
+			}
+			if strings.Contains(execErr.Error(), "database is locked") {
+				time.Sleep(insertRetryDelay)
+				continue
+			} else {
+				break
+			}
+		}
+		if execErr != nil {
 			tx.Rollback()
-			return fmt.Errorf("failed to insert hash %s: %v", fullHash, err)
+			return fmt.Errorf("failed to insert hash %s: %v", fullHash, execErr)
 		}
 	}
 	if err := scanner.Err(); err != nil {
