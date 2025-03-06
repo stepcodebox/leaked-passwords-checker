@@ -24,7 +24,7 @@ else
     echo "Log file already exists. Skipping log file creation."
 fi
 
-if [ ! -f "configs/leaked-passwords-checker.example.json" ]; then
+if [ ! -f "configs/leaked-passwords-checker.json" ]; then
     echo "Config file not found. Copying from example..."
     cp "configs/leaked-passwords-checker.example.json" "configs/leaked-passwords-checker.json"
 else
